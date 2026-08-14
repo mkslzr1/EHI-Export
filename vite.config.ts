@@ -3,7 +3,10 @@ import react from "@vitejs/plugin-react";
 import { VitePWA } from "vite-plugin-pwa";
 
 // https://vite.dev/config/
-export default defineConfig({
+export default defineConfig(({ command }) => ({
+  // GitHub Pages serves this as a project site at /EHI-Export/, but keep the
+  // dev server at root so `npm run dev` isn't affected.
+  base: command === "build" ? "/EHI-Export/" : "/",
   plugins: [
     react(),
     VitePWA({
@@ -36,7 +39,7 @@ export default defineConfig({
         display: "standalone",
         orientation: "any",
         start_url: ".",
-        scope: "/",
+        scope: ".",
         icons: [
           { src: "icon-192.png", sizes: "192x192", type: "image/png" },
           { src: "icon-512.png", sizes: "512x512", type: "image/png" },
@@ -45,4 +48,4 @@ export default defineConfig({
       },
     }),
   ],
-});
+}));
