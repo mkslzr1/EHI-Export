@@ -44,17 +44,29 @@ npm run dev
 
 Open the printed local URL in a browser.
 
-## Building for deployment
+## Deployment
+
+Merges to `main` auto-deploy to GitHub Pages via
+`.github/workflows/deploy.yml`, which builds the app and publishes `dist/` at:
+
+**https://mkslzr1.github.io/EHI-Export/**
+
+One-time setup (repo owner only, first deploy): in the repo's **Settings →
+Pages**, set **Source** to **GitHub Actions**. After that, every push to
+`main` redeploys automatically — no further action needed.
+
+To deploy elsewhere (Netlify, Vercel, Cloudflare Pages, etc.) instead:
 
 ```bash
 npm run build
 ```
 
-This produces a static site in `dist/`. Deploy it to any static host — e.g.
-GitHub Pages, Netlify, Vercel, or Cloudflare Pages. Because everything runs
-client-side, no server-side configuration is required beyond serving static
-files (HTTPS is required for the install-to-home-screen prompt and for
-`localStorage` to persist reliably in Safari).
+This produces a static site in `dist/`. Because everything runs client-side,
+no server-side configuration is required beyond serving static files over
+HTTPS (required for the install-to-home-screen prompt and for `localStorage`
+to persist reliably in Safari). Note `vite.config.ts` sets `base:
+"/EHI-Export/"` for the GitHub Pages build — adjust or remove that if
+deploying to a host serving from the domain root.
 
 ## Installing on iPad
 
