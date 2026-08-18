@@ -8,6 +8,7 @@ import { buildSchemaPrompt, getTables, importFile, previewTable, runQuery } from
 import { getStoredApiKey } from "./lib/storage";
 import type { HistoryEntry, QueryResult, TableInfo } from "./lib/types";
 import { expandArchives, isSupportedFile } from "./lib/zip";
+import { IconClose, IconDatabase, IconSettings, IconShieldCheck } from "./components/icons";
 
 function newId(): string {
   return typeof crypto !== "undefined" && "randomUUID" in crypto
@@ -132,13 +133,20 @@ function App() {
     <div className="app">
       <header className="app-header">
         <div>
-          <h1>EHI Query</h1>
+          <div className="brand">
+            <span className="brand-mark">
+              <IconDatabase />
+            </span>
+            <h1>EHI Query</h1>
+          </div>
           <p className="muted disclaimer">
+            <IconShieldCheck />
             Patient data stays on this device. Only table &amp; column names are sent to
             Claude to generate SQL &mdash; never row data.
           </p>
         </div>
         <button className="btn-secondary" onClick={() => setSettingsOpen(true)}>
+          <IconSettings />
           Settings
         </button>
       </header>
@@ -160,14 +168,15 @@ function App() {
               <div className="preview-header">
                 <h3>Preview: {selectedTable}</h3>
                 <button
-                  className="btn-secondary"
+                  className="icon-btn"
+                  aria-label="Close preview"
                   onClick={() => {
                     setSelectedTable(null);
                     setPreviewResult(null);
                     setPreviewError(null);
                   }}
                 >
-                  Close
+                  <IconClose />
                 </button>
               </div>
               {previewError && <p className="error-msg">{previewError}</p>}

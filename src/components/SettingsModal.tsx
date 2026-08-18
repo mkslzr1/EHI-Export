@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { clearStoredApiKey, setStoredApiKey } from "../lib/storage";
 import { DEFAULT_MODEL } from "../lib/anthropic";
+import { IconSettings } from "./icons";
 
 export function SettingsModal({
   currentKey,
@@ -19,7 +20,12 @@ export function SettingsModal({
   return (
     <div className="modal-backdrop" onClick={onClose}>
       <div className="modal" onClick={(e) => e.stopPropagation()}>
-        <h2>Settings</h2>
+        <div className="modal-title">
+          <span className="modal-title-icon">
+            <IconSettings />
+          </span>
+          <h2>Settings</h2>
+        </div>
         <p className="muted">
           Your Anthropic API key is stored only in this browser (localStorage) and is sent
           directly to Anthropic's API to translate your questions into SQL. It is never

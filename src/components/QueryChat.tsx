@@ -1,5 +1,6 @@
 import { useState } from "react";
 import type { HistoryEntry } from "../lib/types";
+import { IconPlay, IconSend } from "./icons";
 import { ResultsTable } from "./ResultsTable";
 
 function HistoryCard({
@@ -29,6 +30,7 @@ function HistoryCard({
             disabled={entry.status === "pending"}
             onClick={() => onRunSql(entry.id, sql)}
           >
+            <IconPlay />
             {entry.status === "pending" ? "Running..." : "Run query"}
           </button>
         </div>
@@ -79,23 +81,30 @@ export function QueryChat({
       </div>
 
       <div className="ask-bar">
-        {hint && <p className="disabled-hint">{hint}</p>}
-        <textarea
-          className="ask-input"
-          placeholder="Ask a question about your data..."
-          rows={2}
-          value={question}
-          disabled={disabled}
-          onChange={(e) => setQuestion(e.target.value)}
-          onKeyDown={(e) => {
-            if (e.key === "Enter" && !e.shiftKey) {
-              e.preventDefault();
-              submit();
-            }
-          }}
-        />
-        <button className="btn-primary" disabled={disabled || asking || !question.trim()} onClick={submit}>
-          Ask
+        <div className="ask-bar-column">
+          {hint && <p className="disabled-hint">{hint}</p>}
+          <textarea
+            className="ask-input"
+            placeholder="Ask a question about your data..."
+            rows={2}
+            value={question}
+            disabled={disabled}
+            onChange={(e) => setQuestion(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" && !e.shiftKey) {
+                e.preventDefault();
+                submit();
+              }
+            }}
+          />
+        </div>
+        <button
+          className="send-btn"
+          aria-label="Ask"
+          disabled={disabled || asking || !question.trim()}
+          onClick={submit}
+        >
+          <IconSend />
         </button>
       </div>
     </div>

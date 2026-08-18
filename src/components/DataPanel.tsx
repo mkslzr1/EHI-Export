@@ -1,5 +1,6 @@
 import { useRef, useState } from "react";
 import type { TableInfo } from "../lib/types";
+import { IconTable, IconUpload } from "./icons";
 
 export function DataPanel({
   tables,
@@ -37,6 +38,9 @@ export function DataPanel({
           if (e.dataTransfer.files.length) onDrop(e.dataTransfer.files);
         }}
       >
+        <span className="dropzone-icon">
+          <IconUpload />
+        </span>
         <p className="dropzone-title">Import EHI export</p>
         <p className="muted">Tap to choose files, or drop .tsv / .txt / .csv / .zip here</p>
         <input
@@ -70,9 +74,14 @@ export function DataPanel({
                 onClick={() => onPreview(t.name)}
                 title={t.sourceFile}
               >
-                <span className="table-name">{t.name}</span>
-                <span className="table-meta">
-                  {t.rowCount.toLocaleString()} rows &middot; {t.columns.length} cols
+                <span className="table-item-icon">
+                  <IconTable />
+                </span>
+                <span className="table-item-text">
+                  <span className="table-name">{t.name}</span>
+                  <span className="table-meta">
+                    {t.rowCount.toLocaleString()} rows &middot; {t.columns.length} cols
+                  </span>
                 </span>
               </button>
             </li>
