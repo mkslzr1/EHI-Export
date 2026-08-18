@@ -77,7 +77,15 @@ export function QueryChat({
         {history.map((entry) => (
           <HistoryCard key={entry.id} entry={entry} onRunSql={onRunSql} />
         ))}
-        {asking && <div className="bubble bubble-assistant muted">Thinking...</div>}
+        {asking && (
+          <div className="bubble bubble-assistant">
+            <span className="thinking" aria-label="Generating SQL">
+              <span />
+              <span />
+              <span />
+            </span>
+          </div>
+        )}
       </div>
 
       <div className="ask-bar">
