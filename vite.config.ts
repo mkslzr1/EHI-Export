@@ -28,6 +28,17 @@ export default defineConfig(({ command }) => ({
               cacheableResponse: { statuses: [0, 200] },
             },
           },
+          {
+            // Epic Clarity data dictionary (~10MB) — cached after first fetch
+            // rather than precached on install, same reasoning as the WASM rule.
+            urlPattern: ({ url }) => url.pathname.endsWith("epic-schema.json"),
+            handler: "CacheFirst",
+            options: {
+              cacheName: "epic-schema-assets",
+              expiration: { maxEntries: 2, maxAgeSeconds: 60 * 60 * 24 * 365 },
+              cacheableResponse: { statuses: [0, 200] },
+            },
+          },
         ],
       },
       manifest: {

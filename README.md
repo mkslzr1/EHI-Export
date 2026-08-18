@@ -14,9 +14,13 @@ generate the SQL, which then runs locally against your data.
   export, via tap-to-choose or drag-and-drop.
 - Each file becomes a queryable table (auto-detected delimiter/types via DuckDB).
 - Ask questions in plain English; Claude turns them into a SQL query, which you
-  can review/edit before running.
+  can review/edit before running. Every one of Epic's ~7,960 Clarity tables has
+  a bundled description, so this works well beyond the handful of tables
+  anyone would recognize by name — see **Epic schema dictionary** below.
 - No API key? Type a raw `SELECT` statement directly instead.
 - Browse tables and preview rows before querying.
+- **Forensic Review** mode: six deterministic checks for documentation
+  tampering/backdating across imported Clarity tables — see below.
 - Installs to the iPad home screen as a standalone app (PWA) and works offline
   after the first load.
 
@@ -34,6 +38,63 @@ generate the SQL, which then runs locally against your data.
 Review your organization's data handling policies before using this with real
 patient data exports, and confirm sending schema metadata (not PHI) to a
 third-party API is acceptable under your policies.
+
+## Epic schema dictionary
+
+`public/epic-schema.json` is a compact extraction of Epic's own Clarity data
+dictionary — table and column descriptions for ~7,960 tables — generated once
+from a DocGen HTML export via `scripts/extract-epic-schema.mjs` and committed
+to the repo. It's fetched lazily (and cached by the service worker) and used
+to annotate the schema sent to Claude for natural-language queries, so query
+quality doesn't depend on which tables happen to be well-known: whatever you
+import, if Epic documented the column, the model sees what it means instead
+of guessing from a cryptic name like `NOTE_TYPE_NOADD_C_NAME` alone.
+
+To regenerate it from a newer DocGen export:
+
+```bash
+node scripts/extract-epic-schema.mjs <path-to-docgen-dir> public/epic-schema.json
+```
+
+## Forensic Review
+
+A second mode (alongside **Ask**) that runs six deterministic checks over the
+imported Clarity tables, looking for the shape of documentation tampering:
+
+| Check | Question |
+|---|---|
+| Documentation sessions | Were rows charted to one time typed much later, in clusters? |
+| Note backdating | Is a note dated before the encounter, or hours before it was written? |
+| Result amendments | Was a finalised lab/path result reopened and re-finalised? |
+| Order silence | Was there an order-entry gap across a configured critical window? |
+| Completeness | Tables missing from the import, withheld values, stripped note metadata, unproduced sibling encounters |
+| Field contradictions | Do two fields on one row disagree? |
+
+Every finding lists the exact evidence rows behind it — nothing is inferred
+beyond what a detector mechanically derived from the data. Severity follows
+the same ladder throughout: **provable** (both states are in the import),
+**strong** (one side is in the import, the other implied by an audit field),
+**supporting** (a discrepancy worth asking about).
+
+This is a from-scratch TypeScript port, adapted to run entirely client-side
+against DuckDB, of the detector methodology in `ehiforensics` (a Python tool
+for reviewing Epic EHI exports in medical-malpractice litigation). Ported:
+the six checks above, running against flat Clarity TSV/CSV tables only.
+**Not ported** — out of scope for a browser-only, no-backend app:
+
+- **Note-version alteration detection** (`note_alterations` in the original)
+  — the single strongest signal in that methodology — needs the FHIR
+  `DocumentReference` feed from an EHI export, which this app doesn't parse
+  (it only ingests flat TSV/CSV files).
+- Exhibit rendering, `.docx` report generation, RTF/Media/C-CDA ingestion,
+  and OCR — all depend on server-side tooling (headless Chromium,
+  `python-docx`, tesseract) with no browser equivalent wired up here.
+
+Case-specific tuning (which flowsheet rows matter for this matter, the
+critical time window, backdating thresholds, etc.) is entered as JSON in the
+panel, in the same shape as the original tool's config files. **Not legal or
+clinical advice** — a finding here tells you where to look and what to ask,
+not what happened.
 
 ## Getting started (development)
 
@@ -86,6 +147,9 @@ deploying to a host serving from the domain root.
    edit the SQL before running, and re-run it any time.
 4. Tap a table name in the sidebar to preview its first rows and see its
    columns.
+5. Switch to the **Forensic Review** tab to run the six tampering-detection
+   checks against whatever Clarity tables you've imported (see
+   **Forensic Review** above).
 
 ## Regenerating icons
 

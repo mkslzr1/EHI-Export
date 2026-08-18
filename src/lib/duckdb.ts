@@ -65,7 +65,24 @@ export function sanitizeTableName(fileName: string): string {
   return candidate;
 }
 
-function arrowValueToJs(value: unknown): unknown {
+// duckdb-wasm reports DATE/TIME/TIMESTAMP columns as plain numbers or bigints
+// (epoch milliseconds), not JS Date instances — despite what the Arrow JS API
+// suggests. Detect them from the Arrow field's type name (e.g.
+// "Timestamp<MICROSECOND>", "Date32<DAY>") rather than the value's own JS
+// type, and normalize to an ISO string so every date/timestamp column reads
+// as an actual date everywhere downstream (results table, schema sent to
+// Claude, the forensics detectors), not a giant raw number.
+function isTemporalArrowType(type: unknown): boolean {
+  const s = String(type);
+  return s.startsWith("Timestamp") || s.startsWith("Date") || s.startsWith("Time");
+}
+
+function arrowValueToJs(value: unknown, temporal = false): unknown {
+  if (value === null || value === undefined) return value;
+  if (temporal && (typeof value === "number" || typeof value === "bigint")) {
+    const d = new Date(Number(value));
+    return Number.isNaN(d.getTime()) ? null : d.toISOString();
+  }
   if (typeof value === "bigint") {
     return Number.isSafeInteger(Number(value)) ? Number(value) : value.toString();
   }
@@ -144,10 +161,11 @@ export async function runQuery(sql: string): Promise<QueryResult> {
   const conn = await getConn();
   const arrowResult = await conn.query(sql);
   const columns = arrowResult.schema.fields.map((f) => f.name);
+  const temporal = arrowResult.schema.fields.map((f) => isTemporalArrowType(f.type));
   const allRows = arrowResult.toArray();
   const truncated = allRows.length > MAX_PREVIEW_ROWS;
   const rows = allRows.slice(0, MAX_PREVIEW_ROWS).map((row) =>
-    columns.map((col) => arrowValueToJs(row[col])),
+    columns.map((col, i) => arrowValueToJs(row[col], temporal[i])),
   );
   return {
     columns,
@@ -155,6 +173,25 @@ export async function runQuery(sql: string): Promise<QueryResult> {
     rowCount: allRows.length,
     truncated,
   };
+}
+
+/**
+ * Like runQuery, but returns every row with no MAX_PREVIEW_ROWS cap and rows
+ * as column->value objects. For internal analysis passes (e.g. the forensics
+ * detectors) that need to see a whole table, not a UI-bounded preview.
+ */
+export async function runQueryAllRows(sql: string): Promise<Record<string, unknown>[]> {
+  const conn = await getConn();
+  const arrowResult = await conn.query(sql);
+  const columns = arrowResult.schema.fields.map((f) => f.name);
+  const temporal = arrowResult.schema.fields.map((f) => isTemporalArrowType(f.type));
+  return arrowResult.toArray().map((row) => {
+    const out: Record<string, unknown> = {};
+    columns.forEach((col, i) => {
+      out[col] = arrowValueToJs(row[col], temporal[i]);
+    });
+    return out;
+  });
 }
 
 export function buildSchemaPrompt(): string {

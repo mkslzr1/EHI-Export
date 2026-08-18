@@ -97,3 +97,30 @@ export function IconKey(props: SVGProps<SVGSVGElement>) {
     </Icon>
   );
 }
+
+export function IconMessage(props: SVGProps<SVGSVGElement>) {
+  return (
+    <Icon {...props}>
+      <path d="M3 5.2c0-.9.75-1.6 1.6-1.6h10.8c.9 0 1.6.7 1.6 1.6v7.1c0 .9-.7 1.6-1.6 1.6H8.6L5 17V13.9H4.6c-.9 0-1.6-.7-1.6-1.6Z" />
+    </Icon>
+  );
+}
+
+export function IconSearch(props: SVGProps<SVGSVGElement>) {
+  return (
+    <Icon {...props}>
+      <circle cx="8.7" cy="8.7" r="5" />
+      <path d="M12.4 12.4 17 17" />
+    </Icon>
+  );
+}
+
+export function IconAlertTriangle(props: SVGProps<SVGSVGElement>) {
+  return (
+    <Icon {...props}>
+      <path d="M10 3.2 2.6 16.2h14.8L10 3.2Z" />
+      <path d="M10 8.3v3.6" />
+      <circle cx="10" cy="14.2" r="0.7" fill="currentColor" stroke="none" />
+    </Icon>
+  );
+}

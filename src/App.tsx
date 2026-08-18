@@ -1,14 +1,26 @@
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { DataPanel } from "./components/DataPanel";
+import { ForensicsPanel } from "./components/ForensicsPanel";
 import { QueryChat } from "./components/QueryChat";
 import { ResultsTable } from "./components/ResultsTable";
 import { SettingsModal } from "./components/SettingsModal";
 import { assertReadOnlySelect, DEFAULT_MODEL, generateSql } from "./lib/anthropic";
-import { buildSchemaPrompt, getTables, importFile, previewTable, runQuery } from "./lib/duckdb";
+import { getTables, importFile, previewTable, runQuery } from "./lib/duckdb";
+import { buildEnrichedSchemaPrompt, loadEpicSchema } from "./lib/epicSchema";
+import type { EpicSchemaDict } from "./lib/epicSchema";
 import { getStoredApiKey } from "./lib/storage";
 import type { HistoryEntry, QueryResult, TableInfo } from "./lib/types";
 import { expandArchives, isSupportedFile } from "./lib/zip";
-import { IconClose, IconDatabase, IconSettings, IconShieldCheck } from "./components/icons";
+import {
+  IconClose,
+  IconDatabase,
+  IconMessage,
+  IconSearch,
+  IconSettings,
+  IconShieldCheck,
+} from "./components/icons";
+
+type Mode = "ask" | "forensics";
 
 function newId(): string {
   return typeof crypto !== "undefined" && "randomUUID" in crypto
@@ -31,6 +43,13 @@ function App() {
   const [selectedTable, setSelectedTable] = useState<string | null>(null);
   const [previewResult, setPreviewResult] = useState<QueryResult | null>(null);
   const [previewError, setPreviewError] = useState<string | null>(null);
+
+  const [mode, setMode] = useState<Mode>("ask");
+
+  const [epicSchemaDict, setEpicSchemaDict] = useState<EpicSchemaDict>({});
+  useEffect(() => {
+    loadEpicSchema().then(setEpicSchemaDict);
+  }, []);
 
   const updateEntry = useCallback((id: string, patch: Partial<HistoryEntry>) => {
     setHistory((h) => h.map((e) => (e.id === id ? { ...e, ...patch } : e)));
@@ -81,7 +100,8 @@ function App() {
       try {
         let sql: string;
         if (apiKey) {
-          sql = await generateSql(question, buildSchemaPrompt(), apiKey, model);
+          const schemaPrompt = buildEnrichedSchemaPrompt(getTables(), epicSchemaDict);
+          sql = await generateSql(question, schemaPrompt, apiKey, model);
         } else if (/^\s*(SELECT|WITH)\b/i.test(question)) {
           assertReadOnlySelect(question);
           sql = question;
@@ -102,7 +122,7 @@ function App() {
         setAsking(false);
       }
     },
-    [apiKey, model, updateEntry],
+    [apiKey, model, epicSchemaDict, updateEntry],
   );
 
   const handleRunSql = useCallback(
@@ -184,18 +204,43 @@ function App() {
             </div>
           )}
 
-          <QueryChat
-            history={history}
-            asking={asking}
-            disabled={tables.length === 0}
-            hint={
-              tables.length === 0
-                ? "Import at least one file to start querying."
-                : hint
-            }
-            onAsk={handleAsk}
-            onRunSql={handleRunSql}
-          />
+          <div className="mode-tabs" role="tablist">
+            <button
+              className={`mode-tab${mode === "ask" ? " mode-tab-active" : ""}`}
+              role="tab"
+              aria-selected={mode === "ask"}
+              onClick={() => setMode("ask")}
+            >
+              <IconMessage />
+              Ask
+            </button>
+            <button
+              className={`mode-tab${mode === "forensics" ? " mode-tab-active" : ""}`}
+              role="tab"
+              aria-selected={mode === "forensics"}
+              onClick={() => setMode("forensics")}
+            >
+              <IconSearch />
+              Forensic Review
+            </button>
+          </div>
+
+          {mode === "ask" ? (
+            <QueryChat
+              history={history}
+              asking={asking}
+              disabled={tables.length === 0}
+              hint={
+                tables.length === 0
+                  ? "Import at least one file to start querying."
+                  : hint
+              }
+              onAsk={handleAsk}
+              onRunSql={handleRunSql}
+            />
+          ) : (
+            <ForensicsPanel tables={tables} />
+          )}
         </section>
       </main>
 
